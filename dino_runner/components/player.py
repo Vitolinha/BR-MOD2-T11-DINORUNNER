@@ -52,6 +52,7 @@ class Dinosaur(Sprite):
             self.dino_run = True
             self.dino_duck = False
             self.dino_jump = False
+        
 
     def jump(self):
         self.image = JUMPING
