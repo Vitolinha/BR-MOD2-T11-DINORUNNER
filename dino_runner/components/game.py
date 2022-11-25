@@ -1,6 +1,6 @@
 import pygame
 
-from dino_runner.utils.constants import BG, ICON, SCREEN_HEIGHT, SCREEN_WIDTH, TITLE, FPS, DEFAULT_TYPE
+from dino_runner.utils.constants import BG, ICON, SCREEN_HEIGHT, SCREEN_WIDTH, TITLE, FPS, DEFAULT_TYPE, GAME_OVER
 from dino_runner.components.player import Dinosaur
 from dino_runner.components.obstacles.obstacle_manager import ObstacleManager
 from dino_runner.components.power_ups.power_up_manager import PowerUpManager
@@ -11,6 +11,10 @@ FONT_STYLE = 'dino_runner/assets/Other/pixelated.ttf'
 class Game:
     def __init__(self):
         pygame.init()
+        pygame.mixer.init()
+        pygame.mixer.music.load('dino_runner/assets/Sounds/game_song.wav')
+        pygame.mixer.music.set_volume(0.5)
+        pygame.mixer.music.play(loops=-1)
         pygame.display.set_caption(TITLE)
         pygame.display.set_icon(ICON)
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -32,6 +36,7 @@ class Game:
         while self.running:
             if not self.playing:
                 self.show_menu()
+
         
         pygame.display.quit()
         pygame.quit()
@@ -52,22 +57,24 @@ class Game:
                 self.high_score = 0
                 self.playing = False
                 self.running = False
-                
 
     def update(self):
         user_input = pygame.key.get_pressed()
         self.player.update(user_input)
-        self.obstacle_manager.update(self)
+        self.obstacle_manager.update(self, self.player)
         self.update_score()
         self.power_up_manager.update(self.score, self.game_speed, self.player)
 
     def update_score(self):
         self.score += 1
-        if self.score % 50 == 0:
+        if self.score % 100 == 0:
             self.game_speed += 2 ## troca da lógica
         if self.score > self.high_score: ## implementação do high score
             self.high_score = self.score
-
+        if self.score % 1000 == 0: #1000
+            pygame.mixer.music.load('dino_runner/assets/Sounds/point.wav')
+            pygame.mixer.music.set_volume(0.5)
+            pygame.mixer.music.play()
 
     def draw(self):
         self.clock.tick(FPS)
@@ -95,7 +102,7 @@ class Game:
             time_to_show = round((self.player.power_up_time - pygame.time.get_ticks()) / 1000, 2)
             if time_to_show >= 0:
                 self.text_pattern(FONT_STYLE, 20,
-                 f"{self.player.type.capitalize()} enabled for {time_to_show} seconds",
+                 f"{self.player.type.capitalize()} enabled!!",
                   (0, 0, 0), 500, 40)
             else:
                 self.player.has_power_up = False
@@ -110,7 +117,7 @@ class Game:
                 self.game_speed = 20 ## RESET SPEED
                 self.score = 0 ## RESET SCORE
                 self.run()
-
+                
     def text_pattern(self, font, size, message: str, color, position_x, position_y): ## método para a montagem do texto
         font = pygame.font.Font(font, size)
         text = font.render(message, True, (color))
@@ -137,8 +144,9 @@ class Game:
             (0, 0, 0), half_screen_width, half_screen_height)
         else: ## MENU DE RESTART
             self.screen.blit(ICON, (half_screen_width - 40, half_screen_height - 140))
+            self.screen.blit(GAME_OVER, (half_screen_width - 180, half_screen_height - 200))
             self.text_pattern(FONT_STYLE, 22,
-             f"You died, press any key to continue",
+             f"Press any key to continue",
              (0, 0, 0), half_screen_width, half_screen_height)
             self.text_pattern(FONT_STYLE, 22,
              f"Score: {self.score}",
